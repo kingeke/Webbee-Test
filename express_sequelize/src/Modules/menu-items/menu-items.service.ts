@@ -1,6 +1,7 @@
-export class MenuItemsService {
+import MenuItem from "./entities/menu-item.entity";
 
-  /* TODO: complete getMenuItems so that it returns a nested menu structure
+export class MenuItemsService {
+	/* TODO: complete getMenuItems so that it returns a nested menu structure
     Requirements:
     - your code should result in EXACTLY one SQL query no matter the nesting level or the amount of menu items.
     - it should work for infinite level of depth (children of childrens children of childrens children, ...)
@@ -75,7 +76,31 @@ export class MenuItemsService {
     ]
   */
 
-  async getMenuItems() {
-    throw new Error('TODO in task 3');
-  }
+	async getMenuItems() {
+		const menuItems = (await MenuItem.findAll()).map((i: any) => ({
+			...i.toJSON(),
+			children: [],
+		}));
+
+		const menuIdMap = menuItems.reduce((acc: any, el: any, i) => {
+			acc[el.id] = i;
+			return acc;
+		}, {});
+
+		let root;
+
+		menuItems.forEach((menuItem: any) => {
+			// Handle the root element
+			if (menuItem.parentId === null) {
+				root = menuItem;
+				return;
+			}
+			// Use our mapping to locate the parent element in our data array
+			const parentEl = menuItems[menuIdMap[menuItem.parentId]];
+			// Add our current menuItem to its parent's `children` array
+			parentEl.children = [...(parentEl.children || []), menuItem];
+		});
+
+		return [root];
+	}
 }
